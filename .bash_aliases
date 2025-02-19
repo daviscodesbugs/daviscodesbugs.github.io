@@ -8,6 +8,8 @@ alias xclip="xclip -selection c"
 alias yt-wav="youtube-dl -x --prefer-ffmpeg --audio-format wav"
 alias yt-mp3="youtube-dl -x --prefer-ffmpeg --audio-format mp3"
 
+alias ps="ps -o pid,user,time,command -A"
+
 alias pmu="sudo pacman -Syu"
 alias pmi="sudo pacman -S"
 
