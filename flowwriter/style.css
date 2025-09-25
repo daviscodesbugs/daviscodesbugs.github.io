@@ -1,0 +1,23 @@
+body {
+	padding: 20px;
+}
+
+pre {
+	white-space: pre-wrap; 
+}
+
+.row {
+	padding: 10px;
+}
+
+.emoji {
+	font-size: 3em;
+}
+
+#most-recent {
+	font-size: 800%;
+}
+
+#output {
+	color: black;
+}

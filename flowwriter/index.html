@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>Flow Writer</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css'>
+	<link rel='stylesheet prefetch' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css'>
+	<link rel="stylesheet" href="style.css">
+
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/jquery.webui-popover/1.2.1/jquery.webui-popover.min.css">
+</head>
+
+<body>
+	<div ng-app="myApp" ng-controller="myCtrl" capture-keypresses>
+		<div class="row text-center">
+			<h1>Distractionless Writer</h1>
+			<i>The editor only shows one character at a time so that you worry less about how it looks, and more about what it <b>is</b></i>
+		</div>
+		<div class="row text-center">
+			<div class="btn-group" role="group" ng-hide="!isRecording">
+				<div id="stop" class="btn btn-default btn-lg" ng-click="isRecording = !isRecording">Stop <span class="fa fa-hand-paper-o"></span></div>
+			</div>
+			<div class="btn-group" role="group" ng-hide="isRecording">
+				<div id="record" class="btn btn-default btn-lg" ng-click="isRecording = !isRecording">Record <span class="fa fa-keyboard-o"></span></div>
+				<div id="copy" class="btn btn-default btn-lg" ngclipboard data-clipboard-text="{{output}}">Copy <span class="fa fa-copy"></span></div>
+				<div id="clear" class="btn btn-default btn-lg" ng-click="clear()">Clear <span class="fa fa-eraser"></span></div>
+			</div>
+		</div>
+		<div class="row" ng-hide="!isRecording" style="height: 200px">
+			<div class="col-md-6 col-md-offset-3 text-center">
+				<div id="most-recent">{{output | mostRecent}}</div>
+			</div>
+		</div>
+		<div class="row" ng-hide="isRecording">
+			<div class="col-md-6 col-md-offset-3">
+				<pre id="output">{{output}}</pre>
+			</div>
+		</div>
+		<div class="row text-center">
+			<span class="emoji">☝</span> Your text will appear here <span class="emoji">☝</span>
+		</div>
+	</div>
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.8/angular.min.js'></script>
+	<script src="clipboard.min.js"></script>
+	<script src="ngclipboard.js"></script>
+	<script src="https://cdn.jsdelivr.net/jquery/1.11.3/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/jquery.webui-popover/1.2.1/jquery.webui-popover.min.js"></script>
+	<script src="index.js"></script>
+</body>
+
+</html>
