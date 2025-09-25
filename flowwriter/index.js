@@ -1,59 +1,29 @@
 var app = angular.module("myApp", ['ngclipboard']);
 
 app.controller('myCtrl', function ($scope, $http, $document) {
-	var uuid = generateUUID();
+	var storageKey = "flowwriter_text";
 	var saveInterval = 15000;
-	console.log("Generated UUID", uuid);
-	console.log("Delta every", 10000 / 1000, "seconds");
 
-	$scope.output = "";
+	$scope.output = localStorage.getItem(storageKey) || "";
 	$scope.isRecording = false;
 	$scope.changes = true;
 	
 	$scope.clear = function () {
 		if ($scope.output == "") return;
-		
-		var webtask_url = "https://wt-8a5e2a05e58a7a05cf5d417a51918549-0.run.webtask.io/api";
-		var data = {
-			uuid: uuid,
-			last_edited: new Date(),
-			text: $scope.output
-		}
 
-		$http.post(webtask_url, data).then(successCallback, errorCallback);
-
-		function successCallback(res) {
-			console.log("Successfully reset");
-			uuid = generateUUID();
-			$scope.output = "";
-		}
-
-		function errorCallback(res) {
-			console.log("Error:", res);
-		}
+		localStorage.setItem(storageKey, $scope.output);
+		console.log("Text backed up to localStorage");
+		$scope.output = "";
+		localStorage.removeItem(storageKey);
 	};
 
 	setInterval(function() {
 		if ($scope.output == "" || $scope.changes == false) return;
 
-		var webtask_url = "https://wt-8a5e2a05e58a7a05cf5d417a51918549-0.run.webtask.io/api";
-		var data = {
-			uuid: uuid,
-			last_edited: new Date(),
-			text: $scope.output
-		}
+		localStorage.setItem(storageKey, $scope.output);
+		console.log("Text auto-saved to localStorage");
+		$scope.changes = false;
 
-		$http.post(webtask_url, data).then(successCallback, errorCallback);
-
-		function successCallback(res) {
-			console.log("Delta backed.");
-			$scope.changes = false;
-		}
-
-		function errorCallback(res) {
-			console.log("Error:", res);
-		}
-		
 	}, 15000);
 });
 
@@ -100,12 +70,3 @@ $("body").keypress(function (event) {
 		.fadeOut({ duration: 200 });
 });
 
-function generateUUID() {
-    var d = new Date().getTime();
-    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = (d + Math.random()*16)%16 | 0;
-        d = Math.floor(d/16);
-        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
-    });
-    return uuid;
-};
