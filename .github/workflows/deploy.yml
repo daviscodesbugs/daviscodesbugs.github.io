@@ -27,7 +27,7 @@ jobs:
       - name: Prepare content
         run: |
           rm -rf quartz/content/*
-          rsync -av --exclude='.git' --exclude='quartz' --exclude='.github' --exclude='.superpowers' ./ quartz/content/
+          rsync -av --exclude='.git' --exclude='quartz' --exclude='.github' --exclude='.superpowers' --exclude='flowwriter' ./ quartz/content/
           cp .quartz/quartz.config.ts quartz/
           cp .quartz/quartz.layout.ts quartz/
 
@@ -43,6 +43,10 @@ jobs:
       - name: Build Quartz
         working-directory: quartz
         run: npx quartz build
+
+      - name: Copy static assets
+        run: |
+          cp -r flowwriter quartz/public/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -10,7 +10,7 @@ const config: QuartzConfig = {
     analytics: null,
     locale: "en-US",
     baseUrl: "daviscodesbugs.github.io",
-    ignorePatterns: ["private", "templates", ".obsidian", ".trash", ".quartz", ".github", ".superpowers"],
+    ignorePatterns: ["private", "templates", ".obsidian", ".trash", ".quartz", ".github", ".superpowers", "flowwriter"],
     defaultDateType: "modified",
     theme: {
       fontOrigin: "googleFonts",
