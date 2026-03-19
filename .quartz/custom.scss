@@ -1,3 +1,5 @@
+@use "./base.scss";
+
 // Hide reading time and metadata on the landing page
 body[data-slug="index"] .content-meta {
   display: none;
