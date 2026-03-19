@@ -1,0 +1,13 @@
+services:
+  quartz:
+    build: .
+    ports:
+      - "8081:8081"
+    volumes:
+      # Mount vault as Quartz content (Quartz ignorePatterns handles filtering)
+      - ./:/quartz/content:ro
+      # Mount config files into Quartz root
+      - ./.quartz/quartz.config.ts:/quartz/quartz.config.ts:ro
+      - ./.quartz/quartz.layout.ts:/quartz/quartz.layout.ts:ro
+      - ./.quartz/custom.scss:/quartz/quartz/styles/custom.scss:ro
+    command: npx quartz build --serve --port 8081
