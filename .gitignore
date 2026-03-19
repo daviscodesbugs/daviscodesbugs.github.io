@@ -1,0 +1,5 @@
+.obsidian/
+.trash/
+node_modules/
+.superpowers/
+.DS_Store
