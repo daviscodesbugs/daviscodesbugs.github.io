@@ -31,6 +31,7 @@ jobs:
           cp .quartz/quartz.config.ts quartz/
           cp .quartz/quartz.layout.ts quartz/
           cp .quartz/custom.scss quartz/quartz/styles/custom.scss
+          cp .quartz/lightbox.js quartz/quartz/static/lightbox.js
 
       - name: Setup Node
         uses: actions/setup-node@v4

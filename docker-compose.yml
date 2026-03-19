@@ -10,4 +10,5 @@ services:
       - ./.quartz/quartz.config.ts:/quartz/quartz.config.ts:ro
       - ./.quartz/quartz.layout.ts:/quartz/quartz.layout.ts:ro
       - ./.quartz/custom.scss:/quartz/quartz/styles/custom.scss:ro
+      - ./.quartz/lightbox.js:/quartz/quartz/static/lightbox.js:ro
     command: npx quartz build --serve --port 8081

@@ -11,3 +11,8 @@ builder of things that (mostly) work
 [About](./about)
 
 </div>
+
+> [!gallery]
+> [![Voron V0](./attachments/voron_v0.jpg)](./projects/voron-v0)
+
+<script src="/static/lightbox.js"></script>

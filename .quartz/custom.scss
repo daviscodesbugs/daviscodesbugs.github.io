@@ -10,7 +10,8 @@ body[data-slug="index"] .landing-nav {
   display: flex;
   gap: 16px;
   justify-content: center;
-  margin-top: 1.5rem;
+  margin-top: 3rem;
+  margin-bottom: 3rem;
 
   p {
     display: contents;
@@ -50,6 +51,74 @@ body[data-slug="index"] .landing-nav {
 
       &:hover {
         background: rgba(112, 144, 208, 0.18);
+      }
+    }
+  }
+}
+
+// Fullscreen image lightbox
+.lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+
+  &.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+}
+
+// Image gallery via Obsidian callout
+.callout[data-callout="gallery"] {
+  border: none;
+  background: none;
+  padding: 0;
+
+  .callout-title {
+    display: none;
+  }
+
+  .callout-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    padding: 0;
+
+    p {
+      margin: 0;
+    }
+
+    img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: zoom-in;
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
     }
   }
