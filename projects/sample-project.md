@@ -1,26 +1,32 @@
 ---
-title: "Sample Project"
-date: 2026-03-19
-description: "A sample project entry to demonstrate the structure"
+title: "Project Name"
+date: 2026-01-01
+description: "One-line summary of the project"
 tags:
-  - example
+  - tag1
+  - tag2
 draft: true
 ---
 
-## Overview
+## Background
 
-*Brief description of what this project is and why it exists.*
+*What inspired this project? What's the context — the problem, the curiosity, the itch that needed scratching?*
 
-## Tech Stack
+## What it is
 
-- *Language/framework*
-- *Tools used*
+*The finished thing. What does it do, what's the experience of using it?*
 
-## Details
+## The Build
 
-*What makes this interesting. Screenshots, diagrams, key decisions.*
+*Key components, tools, and high-level approach. Not a step-by-step — save that for a blog post.*
+
+## Gallery
+
+> [!gallery]
+> *Add images here: `![[image.jpg]]`*
 
 ## Related Posts
 
-*Links to blog posts about this project go here, e.g.:*
-*[[blog/hello-world|Read the build log]]*
+*Links to blog posts with build logs, deep dives, and lessons learned.*
+
+<script src="/static/lightbox.js"></script>
