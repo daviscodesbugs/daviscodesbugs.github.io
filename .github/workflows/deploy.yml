@@ -31,7 +31,16 @@ jobs:
       - name: Prepare content
         run: |
           rm -rf quartz/content/*
-          rsync -av --exclude='.git' --exclude='quartz' --exclude='.github' --exclude='.superpowers' --exclude='flowwriter' ./ quartz/content/
+          rsync -av \
+            --exclude='.git' \
+            --exclude='quartz' \
+            --exclude='.github' \
+            --exclude='.superpowers' \
+            --exclude='flowwriter' \
+            --exclude='docs' \
+            --exclude='Dockerfile*' \
+            --exclude='docker-compose*' \
+            ./ quartz/content/
           cp .quartz/quartz.config.ts quartz/
           cp .quartz/quartz.layout.ts quartz/
           cp .quartz/custom.scss quartz/quartz/styles/custom.scss

@@ -10,7 +10,27 @@ const config: QuartzConfig = {
     analytics: null,
     locale: "en-US",
     baseUrl: "daviscodesbugs.github.io",
-    ignorePatterns: ["private", "templates", ".obsidian", ".trash", ".quartz", ".github", ".superpowers", "flowwriter"],
+    // Bare directory names do not reliably exclude a whole tree from the asset
+    // emitter (".github" alone still leaked .github/workflows/deploy.yml), so
+    // directories are listed with an explicit /** as well.
+    ignorePatterns: [
+      "private",
+      "templates",
+      ".obsidian",
+      ".trash",
+      ".quartz",
+      ".quartz/**",
+      ".github",
+      ".github/**",
+      ".superpowers",
+      ".superpowers/**",
+      "flowwriter",
+      "flowwriter/**",
+      "docs",
+      "docs/**",
+      "Dockerfile*",
+      "docker-compose*",
+    ],
     defaultDateType: "modified",
     theme: {
       fontOrigin: "googleFonts",
