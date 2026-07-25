@@ -69,7 +69,7 @@ Worth stealing from upstream: copy `quartz.lock.json` **before** the install ste
 - `npx quartz plugin restore` installs the exact commits pinned in `quartz.lock.json`. This is the deterministic command; `plugin install` is not.
 - It clones **42 repos and runs 42 npm installs**: roughly **10 minutes** and **~320 MB**.
 - It must run before `quartz build`, or esbuild fails with `Could not resolve "../../.quartz/plugins"` from `quartz/components/Head.tsx`.
-- **It appears to hang as a Docker build layer.** Output is buffered and nothing is visible for the full 10 minutes. It is progressing. Run it in a live container with streamed output if you need to watch it, then `docker commit` the result.
+- **It looks like it has hung, but it has not.** The command prints nothing until it finishes. Piping it through `tail`, or running it as a Docker build layer without `--progress=plain`, hides all output for the full ten minutes. It works correctly as a normal `RUN` step in a Dockerfile; `Dockerfile.v5` does exactly that and builds cleanly from scratch with `--no-cache` in 11:05. To watch progress, use `docker build --progress=plain ... > build.log` and tail the file.
 
 ### Supply chain is pinned
 
@@ -94,7 +94,7 @@ Built both versions side by side (v4.5.2 on :8081, v5.0.0 on :8082) against the 
 
 | Check | Result |
 |---|---|
-| Emitted files identical | **38** |
+| Emitted files identical | **29**, with zero unexplained differences |
 | Draft filtering | `Filtered out 5 files` on both; all 5 draft URLs 404 on both |
 | Page titles | match (About, Voron V0.2, Morse Code Paddle Converter) |
 | Theme colours | all four accents match in light and dark |
@@ -104,7 +104,9 @@ Built both versions side by side (v4.5.2 on :8081, v5.0.0 on :8082) against the 
 | Explorer / Graph | absent on both |
 | Properties panel | absent |
 
-All remaining file differences were explained: two uncommitted blog posts and their six tag pages exist only on `main`; two scratch Docker files exist only on the branch.
+The only files present in v4 and not v5 are two uncommitted blog posts and their six tag pages, which exist on `main` but not on this branch. Nothing is emitted by v5 that v4 does not also emit.
+
+Both configs also carry the same `ignorePatterns` fix, so neither publishes `docs/`, the Docker files, or `.github/`.
 
 ---
 
@@ -142,10 +144,10 @@ Warm builds are fine. Any change to `quartz.lock.json` busts the cache and pays 
 
 The site publishes files it should not. These are live on v4 today and are **not** caused by the migration:
 
-- [ ] `/Dockerfile`, `/docker-compose.yml` — returned 200 on the live site
-- [ ] `/docs/` — the entire `docs/superpowers/` tree of plans and specs is publicly readable
+- [x] `/Dockerfile`, `/docker-compose.yml` — returned 200 on the live site
+- [x] `/docs/` — the entire `docs/superpowers/` tree of plans and specs was publicly readable
 
-Fix by adding `docs` to `ignorePatterns` and excluding the Docker files from the CI rsync. Worth doing regardless of which Quartz version is running. Deliberately left out of the migration so the v4/v5 output diff stayed meaningful.
+**Fixed on `main` in commit `96a9a79`** and mirrored into this branch's v5 config. Note that bare directory names do not reliably exclude a tree from the asset emitter: `.github` was already listed in `ignorePatterns` and `.github/workflows/deploy.yml` was still being emitted. Directory entries now carry an explicit `/**` form alongside the bare name.
 
 ---
 

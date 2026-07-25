@@ -12,15 +12,27 @@ configuration:
   analytics: null
   locale: en-US
   baseUrl: daviscodesbugs.github.io
+  # Bare directory names do not reliably exclude a whole tree from the asset
+  # emitter (".github" alone still leaked .github/workflows/deploy.yml), so
+  # directories are listed with an explicit /** as well. Keep in sync with the
+  # v4 config until the migration ships.
   ignorePatterns:
     - private
     - templates
     - .obsidian
     - .trash
     - .quartz
+    - .quartz/**
     - .github
+    - .github/**
     - .superpowers
+    - .superpowers/**
     - flowwriter
+    - flowwriter/**
+    - docs
+    - docs/**
+    - Dockerfile*
+    - docker-compose*
   defaultDateType: modified
   theme:
     fontOrigin: googleFonts

@@ -6,9 +6,18 @@ RUN git clone --depth 1 --branch v5.0.0 https://github.com/jackyzha0/quartz.git 
 WORKDIR /quartz
 RUN npm ci
 
-# NOTE: `npx quartz plugin restore` is deliberately NOT run here. It clones 42
-# separate plugin repos (~320MB) and stalled when run as a build layer with no
-# visible progress. It is run instead in a live container so the output can be
-# streamed, then committed into an image. See the migration plan.
+# v5 fetches plugins as 42 separate git repositories. They must be present
+# before `quartz build` runs, or esbuild fails to resolve ".quartz/plugins"
+# from quartz/components/Head.tsx.
+#
+# `plugin restore` installs the exact commits pinned in quartz.lock.json.
+# `plugin install` and `plugin update` do not pin, so prefer restore.
+#
+# This takes roughly 10 minutes and produces about 320MB. It prints nothing at
+# all until it completes -- that is output buffering inside the build layer,
+# not a hang. Because quartz.lock.json is baked into the cloned tag above, this
+# layer is cached and only re-runs when the base image or the pinned Quartz
+# version changes.
+RUN npx quartz plugin restore
 
 EXPOSE 8082

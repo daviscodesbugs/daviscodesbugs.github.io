@@ -1,8 +1,13 @@
 services:
   quartz-v5:
-    # Built from Dockerfile.v5, then `quartz plugin restore` was run in a live
-    # container and committed, because the restore stalls as a build layer.
-    image: dcb-quartz-v5:plugins
+    # Fully reproducible: `docker compose -f docker-compose.v5.yml up --build`
+    # builds Quartz v5.0.0 with all 42 plugins restored at their pinned commits.
+    # The first build takes ~10 minutes (see Dockerfile.v5); afterwards it is
+    # layer-cached.
+    build:
+      context: .
+      dockerfile: Dockerfile.v5
+    image: dcb-quartz-v5:repro
     ports:
       - "8082:8082"
     volumes:
