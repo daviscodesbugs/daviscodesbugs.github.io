@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** Not started. Site is currently pinned to Quartz **v4.5.2** as a stopgap.
+**Status:** Config migration **complete and verified locally** on branch `quartz-v5-migration`. Not shipped. `main` remains pinned to Quartz **v4.5.2**.
 
-**Goal:** Migrate the site from Quartz v4.5.2 to v5.x, restoring the intended design under the new YAML plugin configuration system, then unpin the clone.
+**Remaining work:** CI wiring only (see "Remaining work" below).
 
 ---
 
@@ -24,116 +24,138 @@ When upstream released **v5.0.0**, that clone started pulling v5 while the repo 
 - It only falls back to importing the old TypeScript config when **none** of those exist.
 - The v5 repo ships `quartz.config.default.yaml`, so that file always exists. The custom `quartz.config.ts` is never read.
 
-Result: the build succeeds with **zero errors** and deploys stock Quartz — default theme, `pageTitle: Quartz 5`, Explorer and Graph View re-enabled, and the private `docs/` tree exposed in the Explorer nav.
+Result: the build succeeds with **zero errors** and deploys stock Quartz.
 
-**Mitigation applied 2026-07-25:** both clones pinned to `--branch v4.5.2`, with an explanatory comment at each site. Do not remove those pins until this migration is complete and verified.
+**Mitigation applied 2026-07-25:** both clones pinned to `--branch v4.5.2`, with an explanatory comment at each site. Do not remove those pins until this migration ships.
 
 ---
 
-## What changes in v5
+## Findings from the migration attempt
 
-### Configuration format
+### ⚠️ note-properties is the frontmatter parser — never disable it
 
-`quartz.config.ts` + `quartz.layout.ts` collapse into a single `quartz.config.yaml`. The `configuration:` block maps over almost one-to-one (same keys: `pageTitle`, `baseUrl`, `ignorePatterns`, `defaultDateType`, `theme.typography`, `theme.colors.lightMode` / `darkMode`), so the warm-amber palette should port cleanly.
+The single most important finding. In v4, `Plugin.FrontMatter()` was an explicit transformer. **In v5 there is no standalone frontmatter transformer.** Frontmatter parsing lives in the `note-properties` plugin (see the comment at `quartz/plugins/index.ts`: *"from frontmatter transformer (e.g. note-properties)"*).
 
-### Plugins are now external repositories
+It is tempting to disable `note-properties` because it renders a visible Properties panel that v4 never had. Doing so breaks the site silently — the build succeeds with no warning, but:
 
-The biggest shift. In v4, plugins were `Plugin.FrontMatter()` calls against bundled code. In v5, each is a separate repo fetched at build time:
+- every page title becomes `Untitled`
+- descriptions and tags disappear
+- `RemoveDrafts` never sees `draft: true`, so **every draft page gets published**
+
+The correct configuration keeps the plugin enabled and suppresses only its rendering:
 
 ```yaml
-plugins:
-  - source: github:quartz-community/explorer
-    enabled: true
-    layout:
-      position: left
-      priority: 50
+- source: github:quartz-community/note-properties
+  enabled: true
+  options:
+    hidePropertiesView: true
+  order: 5
 ```
 
-Roughly 40 community plugins cover what v4 bundled: `created-modified-date`, `syntax-highlighting`, `obsidian-flavored-markdown`, `github-flavored-markdown`, `table-of-contents`, `crawl-links`, `description`, `latex`, `remove-draft`, `alias-redirects`, `content-index`, `content-page`, `folder-page`, `tag-page`, `explorer`, `graph`, `search`, `backlinks`, `article-title`, `content-meta`, `tag-list`, `page-title`, `darkmode`, `breadcrumbs`, `footer`, `spacer`.
+This is the same class of silent-success failure as the original v5 config break. Treat any "build succeeded" on v5 with suspicion until output is diffed.
 
-**Consider before migrating:** this introduces a build-time network dependency on third-party repos that the current v4 setup does not have. Evaluate whether that is acceptable, or whether plugins should be vendored/pinned by ref.
+### The official Docker image is not usable
 
-### Layout is declarative, not an array
+Quartz publishes to `ghcr.io/jackyzha0/quartz` via `.github/workflows/docker-build-push.yaml`, but:
 
-v4 declared ordered arrays in `quartz.layout.ts` (`left: [PageTitle(), Search(), Darkmode()]`). v5 has each plugin declare its own `layout.position` (`left` / `right` / `beforeBody` / `afterBody`) and a numeric `layout.priority`. Components sort by priority within a position.
+- **No semver tags exist.** Of 481 tags, only `hugo` and `latest` are non-sha. `:5.0.0` does not resolve. v5.0.0 corresponds to `sha-ab346fa`.
+- **Plugins are not baked in.** Their Dockerfile runs `npm ci; npx quartz plugin install` in a builder stage, then the final stage runs `COPY . .`, which overwrites `.quartz/plugins` with the repo's 1-byte `index.ts` stub. The published image would re-download all 42 plugins at container start.
+- Note their `;` rather than `&&` — a failed plugin install in that build is silently ignored.
 
-Also new: `layout.display` (`mobile-only` / `desktop-only`, replacing the `MobileOnly()` / `DesktopOnly()` wrappers), `layout.condition`, flex `groups`, and `byPageType` overrides replacing the separate `defaultContentPageLayout` / `defaultListPageLayout` exports.
+Worth stealing from upstream: copy `quartz.lock.json` **before** the install step so the expensive layer caches on the lockfile.
 
-`Head` is built-in. `Footer` is a plugin taking `options.links`.
+### Plugin installation is slow and must precede the build
 
----
+- `npx quartz plugin restore` installs the exact commits pinned in `quartz.lock.json`. This is the deterministic command; `plugin install` is not.
+- It clones **42 repos and runs 42 npm installs**: roughly **10 minutes** and **~320 MB**.
+- It must run before `quartz build`, or esbuild fails with `Could not resolve "../../.quartz/plugins"` from `quartz/components/Head.tsx`.
+- **It appears to hang as a Docker build layer.** Output is buffered and nothing is visible for the full 10 minutes. It is progressing. Run it in a live container with streamed output if you need to watch it, then `docker commit` the result.
 
-## Migration tasks
+### Supply chain is pinned
 
-### 1. Establish a scratch environment
+`quartz.lock.json` ships with the v5.0.0 tag and pins every plugin to a commit SHA. This substantially resolves the original concern about depending on ~25 third-party repos — versions do not float, provided the lockfile is respected and `plugin restore` is used rather than `plugin update`.
 
-- [ ] Create a git worktree so the pinned v4 setup stays working on `main`
-- [ ] Add a `docker-compose.v5.yml` (or a build arg) that clones v5 without disturbing the v4 dev server
-- [ ] Confirm the v5 container builds and serves stock Quartz before changing anything
+### Paths unchanged from v4
 
-### 2. Port the configuration block
+- `custom.scss` → `quartz/quartz/styles/custom.scss`
+- `lightbox.js` → `quartz/quartz/static/lightbox.js`
 
-- [ ] Translate `.quartz/quartz.config.ts` `configuration:` into `.quartz/quartz.config.yaml`
-- [ ] Carry over `pageTitle: davis codes bugs`, `pageTitleSuffix: ""`, `baseUrl: daviscodesbugs.github.io`, `defaultDateType: modified`
-- [ ] Port both colour palettes exactly (light `#faf9f7`/`#c07828`, dark `#1c1c1c`/`#f0a050`)
-- [ ] Port typography (Schibsted Grotesk / Source Sans Pro / IBM Plex Mono)
-- [ ] Port `ignorePatterns`, and **add `docs`** — currently absent, which is why the internal plans/specs are publicly emitted
-- [ ] Keep `analytics: null` (the v5 default enables Plausible)
+Existing mounts and CI copy steps work as-is.
 
-### 3. Map the plugin list
+### v5 fixes one v4 leak
 
-- [ ] Enable equivalents for every v4 transformer, filter, and emitter currently in use
-- [ ] Explicitly set `enabled: false` for `explorer` and `graph` — the design spec disables both, and they default on in v5
-- [ ] Configure `footer` with `options.links.GitHub: https://github.com/daviscodesbugs`
-- [ ] Verify `remove-draft` is active so `draft: true` posts stay hidden (currently 5 files are filtered)
-- [ ] Decide on pinning plugin sources by ref rather than floating on default branches
-
-### 4. Rebuild the layout
-
-- [ ] Map the v4 content-page layout to positions/priorities: Breadcrumbs → ArticleTitle → ContentMeta → TagList in `beforeBody`; PageTitle → Search → Darkmode in `left`; TableOfContents → Backlinks in `right`
-- [ ] Reproduce `MobileOnly(Spacer())` via `layout.display: mobile-only`
-- [ ] Reproduce `DesktopOnly(TableOfContents())` via `layout.display: desktop-only`
-- [ ] Recreate the list-page layout (no right sidebar) as a `byPageType` override
-
-### 5. Re-wire the custom assets
-
-- [ ] Confirm the mount target for `custom.scss` — v4 used `quartz/quartz/styles/custom.scss`; verify the v5 path
-- [ ] Confirm the mount target for `lightbox.js` — v4 used `quartz/quartz/static/lightbox.js`
-- [ ] Verify the `> [!gallery]` callout on the landing page still renders and the lightbox still binds
-- [ ] Check that `custom.scss` still imports the Quartz base styles correctly (see commit `c0a8dae`)
-
-### 6. Verify against v4 output
-
-- [ ] Build both versions and diff the rendered HTML for `/`, `/about`, `/projects`, `/blog`
-- [ ] Confirm sidebar reads "davis codes bugs", not "Quartz 5"
-- [ ] Confirm Explorer and Graph View are absent
-- [ ] Confirm the warm amber theme applies in both light and dark mode
-- [ ] Confirm `docs/` is no longer emitted
-- [ ] Confirm the `flowwriter/` static copy still lands in `public/`
-- [ ] Confirm RSS and sitemap still generate
-
-### 7. Cut over
-
-- [ ] Update `Dockerfile` to the target v5 tag and remove the stopgap comment
-- [ ] Update `.github/workflows/deploy.yml` to match
-- [ ] Pin to a specific v5 tag rather than tracking `main` — this whole incident was caused by an unpinned clone
-- [ ] Delete `.quartz/quartz.config.ts` and `.quartz/quartz.layout.ts` once the YAML is verified
-- [ ] Deploy and verify the live site
+v4 emits `.github/workflows/deploy.yml` into `public/` despite `.github` being in `ignorePatterns`. v5 correctly excludes it.
 
 ---
 
-## Open questions
+## Verification results
 
-1. Is the build-time dependency on ~25 third-party plugin repos acceptable, or should they be vendored?
-2. Does v5 have equivalents for every v4 plugin in use, or are any features lost?
-3. Is the v5 `note-properties` plugin (which renders a visible frontmatter Properties table) on by default? It appeared in the accidental v5 build and is not wanted.
-4. Should the migration be taken as an opportunity to enable anything new (`reader-mode`, `og-image`, `stacked-pages`)?
+Built both versions side by side (v4.5.2 on :8081, v5.0.0 on :8082) against the same content.
+
+| Check | Result |
+|---|---|
+| Emitted files identical | **38** |
+| Draft filtering | `Filtered out 5 files` on both; all 5 draft URLs 404 on both |
+| Page titles | match (About, Voron V0.2, Morse Code Paddle Converter) |
+| Theme colours | all four accents match in light and dark |
+| RSS + sitemap | 200 on both |
+| lightbox.js | served, byte-identical (1206 bytes) |
+| Gallery callout | renders on both |
+| Explorer / Graph | absent on both |
+| Properties panel | absent |
+
+All remaining file differences were explained: two uncommitted blog posts and their six tag pages exist only on `main`; two scratch Docker files exist only on the branch.
+
+---
+
+## Remaining work: CI
+
+The only piece not done. The deploy workflow needs a plugin restore step before the build:
+
+```yaml
+- name: Restore Quartz plugins
+  working-directory: quartz
+  run: npx quartz plugin restore
+```
+
+- [ ] Add the restore step to `.github/workflows/deploy.yml`
+- [ ] Add `actions/cache` for `quartz/.quartz/plugins`, keyed on `hashFiles('quartz/quartz.lock.json')`
+- [ ] Change both clone pins from `v4.5.2` to `v5.0.0`
+- [ ] Copy `.quartz/quartz.config.yaml` instead of the two `.ts` files in the Prepare content step
+- [ ] Verify a real deploy, then delete `.quartz/quartz.config.ts` and `.quartz/quartz.layout.ts`
+- [ ] Update `Dockerfile` for local dev (clone v5.0.0, copy lockfile, then `plugin restore`)
+
+### Cost of shipping
+
+| | v4.5.2 (current) | v5.0.0 |
+|---|---|---|
+| Build steps | `npm ci` → build | `npm ci` → `plugin restore` → build |
+| Cold build | ~1 min | **~10 min** |
+| Warm build (cached) | ~1 min | ~1–2 min |
+| Plugin disk | none | ~320 MB |
+
+Warm builds are fine. Any change to `quartz.lock.json` busts the cache and pays full freight.
+
+---
+
+## Deferred, unrelated to v5
+
+The site publishes files it should not. These are live on v4 today and are **not** caused by the migration:
+
+- [ ] `/Dockerfile`, `/docker-compose.yml` — returned 200 on the live site
+- [ ] `/docs/` — the entire `docs/superpowers/` tree of plans and specs is publicly readable
+
+Fix by adding `docs` to `ignorePatterns` and excluding the Docker files from the CI rsync. Worth doing regardless of which Quartz version is running. Deliberately left out of the migration so the v4/v5 output diff stayed meaningful.
 
 ---
 
 ## Reference
 
+- Branch: `quartz-v5-migration`, worktree at `../dcb-quartz-v5`
+- Ported config: `.quartz/quartz.config.yaml`
+- Local v5 environment: `Dockerfile.v5` + `docker-compose.v5.yml` (port 8082)
 - v5 default config: `https://raw.githubusercontent.com/jackyzha0/quartz/v5.0.0/quartz.config.default.yaml`
 - Config loader logic: `quartz/plugins/loader/config-loader.ts`
 - Community plugins: `https://github.com/quartz-community`
+- v5.0.0 commit: `ab346fa`, image `ghcr.io/jackyzha0/quartz:sha-ab346fa`
 - Last known-good v4 tag: `v4.5.2`

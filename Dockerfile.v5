@@ -1,0 +1,14 @@
+FROM node:22-slim
+
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch v5.0.0 https://github.com/jackyzha0/quartz.git /quartz
+
+WORKDIR /quartz
+RUN npm ci
+
+# NOTE: `npx quartz plugin restore` is deliberately NOT run here. It clones 42
+# separate plugin repos (~320MB) and stalled when run as a build layer with no
+# visible progress. It is run instead in a live container so the output can be
+# streamed, then committed into an image. See the migration plan.
+
+EXPOSE 8082

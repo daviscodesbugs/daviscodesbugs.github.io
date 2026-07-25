@@ -1,0 +1,257 @@
+# yaml-language-server: $schema=./quartz/plugins/quartz-plugins.schema.json
+#
+# Quartz v5 configuration. Replaces the v4 pair quartz.config.ts + quartz.layout.ts.
+# Ported to match the v4 output as closely as possible; see
+# docs/superpowers/plans/2026-07-25-quartz-v5-migration.md for the rationale.
+
+configuration:
+  pageTitle: davis codes bugs
+  pageTitleSuffix: ""
+  enableSPA: true
+  enablePopovers: true
+  analytics: null
+  locale: en-US
+  baseUrl: daviscodesbugs.github.io
+  ignorePatterns:
+    - private
+    - templates
+    - .obsidian
+    - .trash
+    - .quartz
+    - .github
+    - .superpowers
+    - flowwriter
+  defaultDateType: modified
+  theme:
+    fontOrigin: googleFonts
+    cdnCaching: true
+    typography:
+      header: Schibsted Grotesk
+      body: Source Sans Pro
+      code: IBM Plex Mono
+    colors:
+      lightMode:
+        light: "#faf9f7"
+        lightgray: "#e5e0db"
+        gray: "#8a8580"
+        darkgray: "#4a4540"
+        dark: "#2a2a2a"
+        secondary: "#c07828"
+        tertiary: "#4a8a4a"
+        highlight: rgba(192, 120, 40, 0.12)
+        textHighlight: "#c0782866"
+      darkMode:
+        light: "#1c1c1c"
+        lightgray: "#333333"
+        gray: "#888888"
+        darkgray: "#d4d4d4"
+        dark: "#e8e8e8"
+        secondary: "#f0a050"
+        tertiary: "#70b070"
+        highlight: rgba(240, 160, 80, 0.12)
+        textHighlight: "#f0a05066"
+
+plugins:
+  # ---------------------------------------------------------------- transformers
+
+  # REQUIRED. In v5 there is no standalone FrontMatter transformer as there was in
+  # v4 -- note-properties is what parses frontmatter into vfile.data.frontmatter.
+  # Disabling it silently breaks every frontmatter-dependent feature: page titles
+  # render as "Untitled", descriptions and tags vanish, and RemoveDrafts stops
+  # detecting `draft: true` so unfinished pages get published.
+  # hidePropertiesView keeps the parsing but hides the visual properties panel,
+  # which v4 never rendered.
+  - source: github:quartz-community/note-properties
+    enabled: true
+    options:
+      includeAll: false
+      includedProperties: []
+      excludedProperties: []
+      hidePropertiesView: true
+      delimiters: "---"
+      language: yaml
+    order: 5
+
+  - source: github:quartz-community/created-modified-date
+    enabled: true
+    options:
+      priority:
+        - frontmatter
+        - filesystem
+    order: 10
+  - source: github:quartz-community/syntax-highlighting
+    enabled: true
+    options:
+      theme:
+        light: github-light
+        dark: github-dark
+      keepBackground: false
+    order: 20
+  - source: github:quartz-community/obsidian-flavored-markdown
+    enabled: true
+    options:
+      enableInHtmlEmbed: false
+    order: 30
+  - source: github:quartz-community/github-flavored-markdown
+    enabled: true
+    order: 40
+  - source: github:quartz-community/table-of-contents
+    enabled: true
+    order: 50
+    layout:
+      position: right
+      priority: 10
+      display: desktop-only
+  - source: github:quartz-community/crawl-links
+    enabled: true
+    options:
+      markdownLinkResolution: shortest
+    order: 60
+  - source: github:quartz-community/description
+    enabled: true
+    order: 70
+  - source: github:quartz-community/latex
+    enabled: true
+    options:
+      renderEngine: katex
+    order: 80
+
+  # Not used by this site
+  - source: github:quartz-community/citations
+    enabled: false
+    order: 85
+  - source: github:quartz-community/hard-line-breaks
+    enabled: false
+    order: 90
+  - source: github:quartz-community/ox-hugo
+    enabled: false
+    order: 91
+  - source: github:quartz-community/roam
+    enabled: false
+    order: 92
+
+  # --------------------------------------------------------------------- filters
+  - source: github:quartz-community/remove-draft
+    enabled: true
+  - source: github:quartz-community/explicit-publish
+    enabled: false
+
+  # -------------------------------------------------------------------- emitters
+  - source: github:quartz-community/alias-redirects
+    enabled: true
+  - source: github:quartz-community/content-index
+    enabled: true
+    options:
+      enableSiteMap: true
+      enableRSS: true
+  - source: github:quartz-community/content-page
+    enabled: true
+  - source: github:quartz-community/folder-page
+    enabled: true
+  - source: github:quartz-community/tag-page
+    enabled: true
+
+  # Emitters that are new in v5 and were not part of the v4 setup
+  - source: github:quartz-community/favicon
+    enabled: false
+  - source: github:quartz-community/og-image
+    enabled: false
+  - source: github:quartz-community/cname
+    enabled: false
+  - source: github:quartz-community/canvas-page
+    enabled: false
+  - source: github:quartz-community/bases-page
+    enabled: false
+
+  # ------------------------------------------------------------------ components
+  - source: github:quartz-community/page-title
+    enabled: true
+    layout:
+      position: left
+      priority: 10
+  - source: github:quartz-community/spacer
+    enabled: true
+    options: {}
+    order: 25
+    layout:
+      position: left
+      priority: 20
+      display: mobile-only
+  - source: github:quartz-community/search
+    enabled: true
+    layout:
+      position: left
+      priority: 30
+  - source: github:quartz-community/darkmode
+    enabled: true
+    layout:
+      position: left
+      priority: 40
+  - source: github:quartz-community/breadcrumbs
+    enabled: true
+    layout:
+      position: beforeBody
+      priority: 5
+      condition: not-index
+  - source: github:quartz-community/article-title
+    enabled: true
+    layout:
+      position: beforeBody
+      priority: 10
+  - source: github:quartz-community/content-meta
+    enabled: true
+    layout:
+      position: beforeBody
+      priority: 20
+  - source: github:quartz-community/tag-list
+    enabled: true
+    layout:
+      position: beforeBody
+      priority: 30
+  - source: github:quartz-community/backlinks
+    enabled: true
+    layout:
+      position: right
+      priority: 20
+  - source: github:quartz-community/footer
+    enabled: true
+    options:
+      links:
+        GitHub: https://github.com/daviscodesbugs
+
+  # Components deliberately disabled. Explorer and Graph View are switched off by
+  # the site design spec; the rest are v5 additions that v4 never rendered.
+  - source: github:quartz-community/explorer
+    enabled: false
+  - source: github:quartz-community/graph
+    enabled: false
+  - source: github:quartz-community/reader-mode
+    enabled: false
+  - source: github:quartz-community/stacked-pages
+    enabled: false
+  - source: github:quartz-community/encrypted-pages
+    enabled: false
+  - source: github:quartz-community/comments
+    enabled: false
+  - source: github:quartz-community/recent-notes
+    enabled: false
+
+layout:
+  byPageType:
+    "404":
+      positions:
+        beforeBody: []
+        left: []
+        right: []
+    content: {}
+    # v4 used a separate list-page layout: no right sidebar and no tag list.
+    folder:
+      exclude:
+        - tag-list
+      positions:
+        right: []
+    tag:
+      exclude:
+        - tag-list
+      positions:
+        right: []

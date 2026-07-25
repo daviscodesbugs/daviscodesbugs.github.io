@@ -1,0 +1,16 @@
+services:
+  quartz-v5:
+    # Built from Dockerfile.v5, then `quartz plugin restore` was run in a live
+    # container and committed, because the restore stalls as a build layer.
+    image: dcb-quartz-v5:plugins
+    ports:
+      - "8082:8082"
+    volumes:
+      # Mount vault as Quartz content (Quartz ignorePatterns handles filtering)
+      - ./:/quartz/content:ro
+      # v5 replaces quartz.config.ts + quartz.layout.ts with a single YAML file
+      - ./.quartz/quartz.config.yaml:/quartz/quartz.config.yaml:ro
+      # These two paths are unchanged from v4
+      - ./.quartz/custom.scss:/quartz/quartz/styles/custom.scss:ro
+      - ./.quartz/lightbox.js:/quartz/quartz/static/lightbox.js:ro
+    command: npx quartz build --serve --port 8082
