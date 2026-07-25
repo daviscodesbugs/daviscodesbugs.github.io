@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -19,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out vault content
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Pinned to v4.5.2: Quartz v5 replaced the TypeScript config (quartz.config.ts +
       # quartz.layout.ts) with a YAML plugin system, and silently ignores the v4 config
@@ -37,7 +38,7 @@ jobs:
           cp .quartz/lightbox.js quartz/quartz/static/lightbox.js
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -54,7 +55,7 @@ jobs:
           cp -r flowwriter quartz/public/
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: quartz/public
 
@@ -67,4 +68,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
