@@ -21,8 +21,11 @@ jobs:
       - name: Check out vault content
         uses: actions/checkout@v4
 
+      # Pinned to v4.5.2: Quartz v5 replaced the TypeScript config (quartz.config.ts +
+      # quartz.layout.ts) with a YAML plugin system, and silently ignores the v4 config
+      # rather than failing. Unpinning without migrating reverts the site to stock Quartz.
       - name: Clone Quartz
-        run: git clone --depth 1 https://github.com/jackyzha0/quartz.git quartz
+        run: git clone --depth 1 --branch v4.5.2 https://github.com/jackyzha0/quartz.git quartz
 
       - name: Prepare content
         run: |
