@@ -45,6 +45,8 @@ jobs:
           cp .quartz/quartz.layout.ts quartz/
           cp .quartz/custom.scss quartz/quartz/styles/custom.scss
           cp .quartz/lightbox.js quartz/quartz/static/lightbox.js
+          cp .quartz/retro-dither.js quartz/quartz/static/retro-dither.js
+          cp .quartz/dither-reveal.js quartz/quartz/static/dither-reveal.js
 
       - name: Setup Node
         uses: actions/setup-node@v7
