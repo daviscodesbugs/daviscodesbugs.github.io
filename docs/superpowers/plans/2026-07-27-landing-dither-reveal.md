@@ -557,6 +557,50 @@ Load `https://daviscodesbugs.github.io/` in the browser and confirm the photo re
 
 ---
 
+## Outcome
+
+Shipped 2026-07-27. Commits `98c1a25`, `1b76f7f`, `897ae46`, `4525d79`, `f65b6d7` on `main`.
+
+### Known issue, deliberately not fixed
+
+`.quartz/dither-reveal.js` — when the gallery image has not finished loading, `begin()` is
+deferred via a one-shot `load` listener. `teardown()` does not remove that pending listener.
+A fast double-navigation onto a page with a slow-loading image could let a stale listener fire
+just after a fresh `initDitherReveal()` has already started, transiently producing two canvases.
+
+Reviewed twice and parked both times: the timing window is narrow, the condition self-heals on
+the next `nav` or on reveal completion, the worst case is a brief visual glitch, and an
+`AbortController`-based fix was judged disproportionate for a decorative effect. Revisit only if
+it is ever actually observed.
+
+### The bug that shipped, and why every gate missed it
+
+The effect went to production rendering nothing at all, and was fixed afterwards in `f65b6d7`.
+
+`strength: 0` was passed to neutralise the component's pointer-following lens, based on its
+documented meaning: *"Coverage of the dithered pixels inside the lens."* That description is
+wrong. In the fragment shader `strength` is a master gain on the entire effect:
+
+```glsl
+mask  = max(lens, uBase) * uStrength
+apply = step(bayer(cell), mask)
+```
+
+At `uStrength = 0`, `mask` is 0 for every pixel, so `apply` is 0 for every pixel, and the shader
+emits the source image unchanged. The correct configuration is `strength: 1` with the lens
+neutralised by `radius: 0` instead.
+
+It passed three task reviews, a whole-branch review, a fix wave, a scoped re-review, and live
+browser verification covering reveal, teardown, lightbox, SPA navigation and reduced motion.
+Every one of those checks tested the effect's **lifecycle** — does a canvas appear, does it
+disappear, does anything leak — and every one of those answers was correct. None asserted that
+the rendered pixels differed from the source image.
+
+**A canvas that renders a perfect copy of its input passes every structural check.** For visual
+work, at least one check must compare output pixels against input pixels, or sample the canvas
+for the effect's signature colours. Screenshots alone are not sufficient: a screenshot of a
+completed reveal is indistinguishable from a screenshot of an effect that never ran.
+
 ## Notes for the implementer
 
 **Why the canvas is appended before `createRetroDither` is called.** The component runs `syncCanvasSize()` during initialisation, which reads `output.clientWidth` and `output.clientHeight` to size the WebGL backing store. A canvas that is not yet in the document reports zero for both, producing a 1×1 render target and a blank effect.
