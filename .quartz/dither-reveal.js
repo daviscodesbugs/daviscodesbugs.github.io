@@ -69,9 +69,17 @@
     instance = api.createRetroDither(
       { source: source, content: img, output: canvas },
       {
+        // `strength` is NOT lens-only coverage, despite what its doc comment in the
+        // component claims. In the fragment shader it is a master gain on the whole
+        // effect:
+        //     mask  = max(lens, uBase) * uStrength
+        //     apply = step(bayer(cell), mask)
+        // so `strength: 0` forces mask to 0 everywhere and the dither never renders,
+        // silently. It must be 1. The pointer lens is neutralised with `radius: 0`
+        // instead, which drives `lens` to ~0 and leaves `baseStrength` in control.
         radius: 0,
         softness: 1,
-        strength: 0,
+        strength: 1,
         baseStrength: 1,
         followSpeed: 1,
         pixelSize: 3,
