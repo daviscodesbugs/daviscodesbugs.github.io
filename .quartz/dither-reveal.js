@@ -20,7 +20,22 @@
       try { instance.destroy(); } catch (e) {}
       instance = null;
     }
-    if (canvas && canvas.parentNode) { canvas.parentNode.removeChild(canvas); }
+    if (canvas) {
+      // destroy() frees the vendored component's own GPU resources but never
+      // calls loseContext(), so browsers that don't eagerly reclaim orphaned
+      // WebGL contexts on GC could accumulate them across SPA navigations.
+      // Do this unconditionally: even a canvas whose instance came back null
+      // may have already acquired a context.
+      try {
+        var gl = canvas.getContext("webgl2");
+        var lose = gl && gl.getExtension("WEBGL_lose_context");
+        if (lose) { lose.loseContext(); }
+      } catch (e) {}
+      if (canvas.parentNode) {
+        canvas.parentNode.classList.remove("dither-reveal-host");
+        canvas.parentNode.removeChild(canvas);
+      }
+    }
     canvas = null;
   }
 
