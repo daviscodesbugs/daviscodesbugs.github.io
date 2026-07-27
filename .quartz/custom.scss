@@ -123,3 +123,19 @@ body[data-slug="index"] .landing-nav {
     }
   }
 }
+
+// Dither reveal overlay for the landing page gallery image.
+// The host is the <a> wrapping the image; it needs a positioning context.
+// The canvas must not intercept clicks or the lightbox stops working.
+.dither-reveal-host {
+  position: relative;
+  display: inline-block;
+}
+
+.dither-reveal-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}

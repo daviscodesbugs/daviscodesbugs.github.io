@@ -11,4 +11,6 @@ services:
       - ./.quartz/quartz.layout.ts:/quartz/quartz.layout.ts:ro
       - ./.quartz/custom.scss:/quartz/quartz/styles/custom.scss:ro
       - ./.quartz/lightbox.js:/quartz/quartz/static/lightbox.js:ro
+      - ./.quartz/retro-dither.js:/quartz/quartz/static/retro-dither.js:ro
+      - ./.quartz/dither-reveal.js:/quartz/quartz/static/dither-reveal.js:ro
     command: npx quartz build --serve --port 8081
