@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#020617">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Pinewood Derby Bracket</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel2: #273449; --text: #f1f5f9; --muted: #94a3b8;
+    --accent: #f59e0b; --good: #22c55e; --bad: #ef4444; --blue: #38bdf8;
+    --l1: #ef4444; --l2: #3b82f6; --l3: #22c55e;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  button, .lane, .lane-toggle, label { touch-action: manipulation; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 1.2rem; background: #020617; border-bottom: 3px solid var(--accent); flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 1.5rem; }
+  main { max-width: 1100px; margin: 0 auto; padding: 1.2rem; }
+  .panel { background: var(--panel); border-radius: 14px; padding: 1.2rem; margin-bottom: 1.2rem; }
+  h2 { margin: 0 0 .8rem; font-size: 1.25rem; }
+  h3 { margin: 0 0 .6rem; font-size: 1.05rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  button { font: inherit; border: 0; border-radius: 10px; padding: .6rem 1rem; cursor: pointer; background: var(--panel2); color: var(--text); }
+  button:hover:not(:disabled) { filter: brightness(1.2); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: #111; font-weight: 700; }
+  button.danger { background: #7f1d1d; }
+  button.small { padding: .35rem .7rem; font-size: .9rem; }
+  input[type=text], textarea { font: inherit; padding: .65rem .8rem; border-radius: 10px; border: 2px solid var(--panel2); background: #0b1222; color: var(--text); width: 100%; }
+  input[type=text]:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  .row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+  .muted { color: var(--muted); }
+  .error { color: var(--bad); min-height: 1.2em; margin-top: .4rem; }
+  .hidden { display: none !important; }
+
+  /* setup */
+  .car-rows { margin-top: 1rem; }
+  .car-row { display: grid; grid-template-columns: 2rem minmax(0, 1fr) 8.6rem 8.6rem 8.4rem 2.6rem; gap: .6rem; align-items: center; padding: .45rem .3rem; border-bottom: 1px solid #334155; }
+  .car-row.head { color: var(--muted); font-size: .8rem; text-transform: uppercase; font-weight: 600; }
+  .car-row .nm { font-weight: 600; word-break: break-word; }
+  .car-row.out .nm { text-decoration: line-through; opacity: .6; }
+  .car-row .cell { display: flex; flex-direction: column; gap: .2rem; }
+  .car-row .m-label { display: none; font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  /* losses: 3 segmented buttons */
+  .seg { display: inline-flex; border-radius: 10px; overflow: hidden; border: 2px solid #334155; background: #0b1222; }
+  .seg button { border-radius: 0; padding: .45rem 0; width: 2.6rem; background: transparent; color: #94a3b8; font-weight: 700; }
+  .seg button + button { border-left: 2px solid #334155; }
+  .seg button.on { background: var(--accent); color: #111; }
+  .seg button.on.out { background: var(--bad); color: #fff; }
+  .seg button small { font-size: .6rem; font-weight: 600; margin-left: 1px; }
+  /* races: − number + */
+  .stepper { display: inline-flex; align-items: center; border-radius: 10px; overflow: hidden; border: 2px solid #334155; background: #0b1222; }
+  .stepper button { border-radius: 0; width: 2.6rem; padding: .45rem 0; font-size: 1.15rem; font-weight: 700; line-height: 1; background: var(--panel2); }
+  .stepper .val { min-width: 2.6rem; text-align: center; font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+  .car-row .lanes-pick { display: flex; gap: 4px; }
+  .lane-toggle { padding: .4rem .65rem; min-width: 2.4rem; font-weight: 700; background: #0b1222; color: #64748b; }
+  .lane-toggle.on.u0 { background: var(--l1); color: #111; } .lane-toggle.on.u1 { background: var(--l2); color: #111; } .lane-toggle.on.u2 { background: var(--l3); color: #111; }
+  .add-form { display: flex; gap: .7rem; align-items: flex-end; flex-wrap: wrap; }
+  .add-form .fld { display: flex; flex-direction: column; gap: .25rem; }
+  .add-form .fld > span { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .add-form .name-fld { flex: 1; min-width: 200px; }
+  .add-form .seg button, .add-form .stepper button { padding: .65rem 0; }
+  .add-form .lane-toggle { padding: .6rem .8rem; }
+  #newLanes { display: flex; gap: 4px; }
+  .start-row { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+  .rules label { display: block; margin: .35rem 0; cursor: pointer; }
+
+  /* race */
+  .race-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .5rem; }
+  .race-title { font-size: 2rem; font-weight: 800; margin: 0; }
+  .race-title.final { color: var(--accent); }
+  .lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+  .lane { position: relative; border-radius: 14px; padding: 1rem; background: var(--panel2); border-top: 8px solid var(--lc); cursor: pointer; min-height: 160px; display: flex; flex-direction: column; justify-content: space-between; user-select: none; transition: transform .08s; }
+  .lane:active { transform: scale(.98); }
+  .lane.empty { cursor: default; opacity: .4; }
+  .lane .lane-label { font-weight: 800; color: var(--lc); letter-spacing: .1em; }
+  .lane .lane-label b { margin-left: .3em; }
+  .lane .car-name { font-size: 1.9rem; font-weight: 800; word-break: break-word; margin: .4rem 0; }
+  .lane .badge { position: absolute; top: .6rem; right: .6rem; width: 3.2rem; height: 3.2rem; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 1.2rem; color: #111; }
+  .place-1 { background: #fbbf24; } .place-2 { background: #cbd5e1; } .place-3 { background: #d97706; }
+  .chip { display: inline-block; font-size: .8rem; padding: .15rem .5rem; border-radius: 999px; background: #0b1222; color: var(--muted); margin-right: .3rem; }
+  .chip.l1 { color: #fca5a5; } .chip.out { color: #fca5a5; } .chip.ok { color: #86efac; }
+  .ondeck { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+  .deck-card { background: var(--panel2); border-radius: 12px; padding: .8rem; border-left: 6px solid var(--lc, #475569); }
+  .deck-card .lane-label { font-size: .8rem; font-weight: 700; color: var(--lc, var(--muted)); letter-spacing: .08em; }
+  .deck-card .car-name { font-size: 1.3rem; font-weight: 700; }
+  .deck-card.tbd .car-name { color: var(--muted); font-style: italic; font-weight: 500; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th, td { text-align: left; padding: .45rem .5rem; border-bottom: 1px solid #334155; }
+  th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; }
+  tr.out td { opacity: .45; }
+  .lanes-used span { display: inline-block; min-width: 1.4rem; padding: 0 2px; text-align: center; border-radius: 4px; margin-right: 2px; font-size: .8rem; background: #0b1222; color: #475569; }
+  .lanes-used span.used { color: #111; font-weight: 700; }
+  .lanes-used span.used.u0 { background: var(--l1); } .lanes-used span.used.u1 { background: var(--l2); } .lanes-used span.used.u2 { background: var(--l3); }
+  .status { font-weight: 600; }
+  .status.Racing, .status.Final { color: var(--accent); } .status.On.deck { color: var(--blue); }
+  .status.Out { color: var(--bad); }
+  .log-entry { padding: .45rem 0; border-bottom: 1px solid #334155; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  .podium { display: flex; justify-content: center; align-items: flex-end; gap: 1rem; margin: 1.5rem 0 .5rem; }
+  .podium div { text-align: center; border-radius: 12px 12px 0 0; padding: 1rem; width: 30%; color: #111; font-weight: 800; display: flex; flex-direction: column; justify-content: flex-start; }
+  .podium .p1 { background: #fbbf24; height: 220px; } .podium .p2 { background: #cbd5e1; height: 170px; } .podium .p3 { background: #d97706; height: 130px; }
+  .podium .medal { font-size: 2.4rem; } .podium .nm { font-size: 1.4rem; word-break: break-word; }
+
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  @media (max-width: 720px) {
+    header { padding: .55rem .8rem; padding-top: max(.55rem, env(safe-area-inset-top)); gap: .5rem; }
+    header h1 { font-size: 1.15rem; }
+    main { padding: .7rem; padding-bottom: calc(.7rem + env(safe-area-inset-bottom)); }
+    .panel { padding: .9rem; border-radius: 12px; margin-bottom: .8rem; }
+    .grid2 { grid-template-columns: 1fr; gap: 0; }
+    .hide-sm { display: none; }
+
+    /* add form: name on its own line, then losses / races, lanes, full-width button */
+    .add-form { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+    .add-form .name-fld { grid-column: 1 / -1; min-width: 0; }
+    .add-form .seg, .add-form .stepper { display: flex; width: 100%; }
+    .add-form .seg button, .add-form .stepper button { flex: 1; width: auto; }
+    .add-form .stepper .val { flex: 1; }
+    .add-form .lanes-fld { grid-column: 1 / -1; }
+    #newLanes .lane-toggle { flex: 1; padding: .7rem; }
+    .add-form button[type=submit] { grid-column: 1 / -1; padding: .85rem; font-size: 1.05rem; }
+
+    /* car list rows become cards */
+    .car-row.head { display: none; }
+    .car-row { grid-template-columns: auto 1fr auto; grid-template-areas: "nm nm del" "loss . races" "lanes lanes lanes"; background: var(--panel2); border: 0; border-radius: 10px; padding: .6rem; margin-bottom: .5rem; row-gap: .4rem; }
+    .car-row .idx { display: none; }
+    .car-row .nm { grid-area: nm; font-size: 1.05rem; }
+    .car-row .c-loss { grid-area: loss; } .car-row .c-races { grid-area: races; }
+    .car-row .c-lanes { grid-area: lanes; }
+    .car-row .c-del { grid-area: del; justify-self: end; }
+    .car-row .m-label { display: block; }
+    .car-row .lanes-pick .lane-toggle { flex: 1; min-width: 0; padding: .45rem 0; }
+    .start-row button { width: 100%; }
+
+    /* race: horizontal lane cards */
+    .race-title { font-size: 1.5rem; }
+    .race-head { flex-direction: column; gap: .1rem; }
+    .lanes { grid-template-columns: 1fr; gap: .6rem; margin: .8rem 0; }
+    .lane { min-height: 0; display: grid; grid-template-columns: 3.6rem minmax(0, 1fr) 3rem; grid-template-areas: "lbl name badge" "lbl chips badge"; column-gap: .7rem; align-items: center; padding: .7rem .7rem .7rem 0; border-top: 0; border-left: 0; overflow: hidden; }
+    .lane .lane-label { grid-area: lbl; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--lc); color: #111; margin: -.7rem 0; font-size: .65rem; letter-spacing: .08em; }
+    .lane .lane-label b { margin: 0; font-size: 1.7rem; line-height: 1; letter-spacing: 0; }
+    .lane .car-name { grid-area: name; font-size: 1.45rem; margin: 0; }
+    .lane .chips { grid-area: chips; }
+    .lane .badge { grid-area: badge; position: static; width: 2.8rem; height: 2.8rem; font-size: 1rem; }
+    .save-bar { position: sticky; bottom: 0; z-index: 5; background: var(--panel); margin: 0 -.9rem -.9rem; padding: .7rem .9rem calc(.7rem + env(safe-area-inset-bottom)); border-top: 1px solid #334155; border-radius: 0 0 12px 12px; }
+    .save-bar #saveBtn { flex: 1; padding: .85rem; font-size: 1.05rem; }
+    .save-bar #clearBtn { padding: .85rem 1rem; }
+    .save-bar #saveHint { flex-basis: 100%; order: -1; font-size: .9rem; }
+
+    .ondeck { grid-template-columns: 1fr; gap: .5rem; }
+    .deck-card { display: flex; align-items: center; gap: .8rem; padding: .6rem .8rem; }
+    .deck-card .lane-label { min-width: 4.5rem; }
+    .deck-card .car-name { font-size: 1.15rem; }
+
+    table { font-size: .88rem; }
+    th, td { padding: .4rem .3rem; }
+    .lanes-used span { min-width: 1.2rem; }
+
+    .podium { gap: .4rem; }
+    .podium div { padding: .6rem .3rem; width: 33%; }
+    .podium .p1 { height: 180px; } .podium .p2 { height: 145px; } .podium .p3 { height: 115px; }
+    .podium .medal { font-size: 1.9rem; } .podium .nm { font-size: 1.05rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏁 Pinewood Derby</h1>
+  <div class="row">
+    <button id="undoBtn" class="small">↶ Undo</button>
+    <button id="resetBtn" class="small danger">New Derby</button>
+  </div>
+</header>
+
+<main>
+  <div id="storageWarn" class="panel hidden" style="background:#7f1d1d"></div>
+  <!-- SETUP -->
+  <section id="setupView" class="hidden">
+    <div class="panel">
+      <h2>Enter the cars</h2>
+      <form id="addForm" class="add-form">
+        <label class="fld name-fld"><span>Car name</span>
+          <input type="text" id="carInput" placeholder="e.g. Lightning" autocomplete="off"></label>
+        <div class="fld"><span>Losses</span><div id="newLosses"></div></div>
+        <div class="fld"><span>Races run</span><div id="newRaces"></div></div>
+        <div class="fld lanes-fld"><span>Lanes used</span>
+          <div id="newLanes"></div></div>
+        <button class="primary" type="submit">Add Car</button>
+      </form>
+      <p class="muted" style="margin:.5rem 0 0; font-size:.9rem">New derby? Just type a name and add. Only fill in losses, races and lanes for cars that already raced. You can change them in the list below until the bracket starts.</p>
+      <div id="addError" class="error"></div>
+      <div id="seedList" style="overflow-x:auto"></div>
+      <p id="carCount" class="muted"></p>
+    </div>
+    <div class="panel rules">
+      <h3>Rules</h3>
+      <p class="muted" style="margin-top:0">3 cars race at a time, randomly grouped. A car is out after 2 losses. Cars get a different lane each race whenever possible. When only 3 cars are left, they run a final race for 1st, 2nd and 3rd.</p>
+      <strong>Who gets a loss in each race?</strong>
+      <label><input type="radio" name="lossRule" value="last" checked> Only last place (more racing for everyone)</label>
+      <label><input type="radio" name="lossRule" value="allButWinner"> Everyone except the winner (faster)</label>
+    </div>
+    <div class="start-row">
+      <button id="startBtn" class="primary" style="font-size:1.2rem; padding:.9rem 1.6rem">Start the Bracket 🚦</button>
+      <span id="startHint" class="muted"></span>
+    </div>
+  </section>
+
+  <!-- RACING -->
+  <section id="raceView" class="hidden">
+    <div class="panel">
+      <div class="race-head">
+        <p id="raceTitle" class="race-title"></p>
+        <span id="raceInfo" class="muted"></span>
+      </div>
+      <p class="muted" id="raceHelp" style="margin:.4rem 0 0">Tap the cars in the order they cross the finish line.</p>
+      <div id="lanes" class="lanes"></div>
+      <div class="row save-bar">
+        <button id="saveBtn" class="primary" disabled>Save Results</button>
+        <button id="clearBtn">Clear</button>
+        <span id="saveHint" class="muted"></span>
+      </div>
+    </div>
+
+    <div class="panel" id="deckPanel">
+      <h3>On Deck</h3>
+      <div id="ondeck" class="ondeck"></div>
+    </div>
+  </section>
+
+  <!-- DONE -->
+  <section id="doneView" class="hidden">
+    <div class="panel">
+      <h2 style="text-align:center; font-size:2rem">🏆 Final Results</h2>
+      <div id="podium" class="podium"></div>
+    </div>
+  </section>
+
+  <!-- shared: standings + log -->
+  <section id="statsView" class="grid2 hidden">
+    <div class="panel">
+      <h3>Standings</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Car</th><th>Races</th><th class="hide-sm">Wins</th><th>Losses</th><th title="Colored = lane already raced">Lanes used</th><th>Status</th></tr></thead>
+        <tbody id="standings"></tbody>
+      </table></div>
+    </div>
+    <div class="panel">
+      <h3>Race History</h3>
+      <div id="log"></div>
+    </div>
+  </section>
+</main>
+
+<script id="bracket-logic">
+// Pinewood derby double-elimination bracket logic (no DOM; usable from browser or Node).
+(function (root) {
+  'use strict';
+
+  const LANES = 3;
+
+  function shuffle(arr, rand = Math.random) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function newState() {
+    return {
+      phase: 'setup',          // setup | racing | done
+      lossRule: 'last',        // 'last' = only last place takes a loss; 'allButWinner' = everyone but 1st
+      cars: [],
+      queue: [],               // waiting line of active cars not in the current race
+      current: null,           // { number, isFinal, entries: [{carId, lane}] }
+      log: [],
+      standings: null,         // [carId 1st, 2nd, 3rd] when done
+      raceCount: 0,
+      elimCount: 0,
+      history: [],             // JSON snapshots for undo
+    };
+  }
+
+  function carById(state, id) {
+    return state.cars.find((c) => c.id === id);
+  }
+
+  // seed (optional): results from before this app took over — { losses, races, lanes: [bool|count x3] }
+  function addCar(state, name, seed) {
+    name = String(name || '').trim();
+    if (!name) return { ok: false, error: 'Name is empty' };
+    if (state.phase !== 'setup') return { ok: false, error: 'Bracket already started' };
+    if (state.cars.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
+      return { ok: false, error: `"${name}" is already entered` };
+    }
+    const id = state.cars.reduce((m, c) => Math.max(m, c.id), 0) + 1;
+    state.cars.push({
+      id, name, losses: 0, wins: 0, races: 0,
+      lanes: Array(LANES).fill(0), lastLane: null,
+      eliminated: false, elimOrder: null,
+    });
+    if (seed) setSeed(state, id, seed);
+    return { ok: true };
+  }
+
+  // Set a car's prior results before the bracket starts. Keeps the numbers consistent:
+  // losses 0-2, and total races at least the number of losses and lanes already used.
+  function setSeed(state, id, seed) {
+    if (state.phase !== 'setup') return;
+    const car = carById(state, id);
+    if (!car) return;
+    const int = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.floor(Number(v) || 0)));
+    if (seed.losses != null) car.losses = int(seed.losses, 0, 2);
+    if (seed.lanes) car.lanes = car.lanes.map((_, l) => int(seed.lanes[l] === true ? 1 : seed.lanes[l], 0, 99));
+    if (seed.races != null) car.races = int(seed.races, 0, 999);
+    const laneTotal = car.lanes.reduce((a, b) => a + b, 0);
+    car.races = Math.max(car.races, car.losses, laneTotal);
+  }
+
+  function isSeeded(car) {
+    return car.losses > 0 || car.races > 0 || car.lanes.some((u) => u > 0);
+  }
+
+  function removeCar(state, id) {
+    if (state.phase !== 'setup') return;
+    state.cars = state.cars.filter((c) => c.id !== id);
+  }
+
+  function activeCars(state) {
+    return state.cars.filter((c) => !c.eliminated);
+  }
+
+  // All ways to put k cars into distinct lanes (0-based).
+  function lanePermutations(k) {
+    const out = [];
+    const used = Array(LANES).fill(false);
+    const cur = [];
+    (function rec() {
+      if (cur.length === k) { out.push(cur.slice()); return; }
+      for (let l = 0; l < LANES; l++) {
+        if (used[l]) continue;
+        used[l] = true; cur.push(l); rec(); cur.pop(); used[l] = false;
+      }
+    })();
+    return out;
+  }
+
+  // Pick lanes so each car gets a lane it hasn't raced in yet whenever possible.
+  // Once a car has used every lane, avoid repeating its previous lane and spread usage evenly.
+  function laneCost(state, carIds, perm) {
+    let cost = 0;
+    perm.forEach((lane, i) => {
+      const car = carById(state, carIds[i]);
+      cost += car.lanes[lane] * 1000;          // reused lane: heavy penalty
+      if (car.lastLane === lane) cost += 100;  // same lane as last race
+    });
+    return cost;
+  }
+
+  function bestLanes(state, carIds) {
+    let best = null, bestCost = Infinity;
+    for (const perm of lanePermutations(carIds.length)) {
+      const cost = laneCost(state, carIds, perm);
+      if (cost < bestCost) { bestCost = cost; best = perm; }
+    }
+    return { perm: best, cost: bestCost };
+  }
+
+  function assignLanes(state, carIds) {
+    const { perm } = bestLanes(state, carIds);
+    return carIds
+      .map((carId, i) => ({ carId, lane: perm[i] }))
+      .sort((a, b) => a.lane - b.lane);
+  }
+
+  // Choose the next heat from the waiting queue. The car that has waited longest always
+  // races; the other two are picked from the next few in line, preferring a group where
+  // nobody has to repeat a lane.
+  const WINDOW = 6;
+  function selectHeat(state, queue) {
+    if (queue.length <= LANES) return assignLanes(state, queue);
+    const win = queue.slice(0, Math.min(WINDOW, queue.length));
+    let best = null, bestCost = Infinity;
+    for (let i = 1; i < win.length; i++) {
+      for (let j = i + 1; j < win.length; j++) {
+        const ids = [win[0], win[i], win[j]];
+        const cost = bestLanes(state, ids).cost + i + j;
+        if (cost < bestCost) { bestCost = cost; best = ids; }
+      }
+    }
+    return assignLanes(state, best);
+  }
+
+  function snapshot(state) {
+    const { history, ...rest } = state;
+    state.history.push(JSON.stringify(rest));
+    if (state.history.length > 30) state.history.shift(); // keep storage small
+  }
+
+  function undo(state) {
+    if (!state.history.length) return state;
+    const prev = JSON.parse(state.history.pop());
+    prev.history = state.history;
+    return prev;
+  }
+
+  function start(state, rand = Math.random) {
+    const alive = state.cars.filter((c) => c.losses < 2);
+    if (alive.length < 3) {
+      return { ok: false, error: state.cars.length < 3 ? 'Need at least 3 cars' : 'Need at least 3 cars with fewer than 2 losses' };
+    }
+    snapshot(state);
+    state.phase = 'racing';
+    // Cars seeded with 2 losses start out of the bracket.
+    for (const c of state.cars) {
+      if (c.losses >= 2) { c.eliminated = true; c.elimOrder = ++state.elimCount; }
+    }
+    // Random order, but cars that have raced less go first (matters when resuming a derby).
+    state.queue = shuffle(alive.map((c) => c.id), rand)
+      .sort((a, b) => carById(state, a).races - carById(state, b).races);
+    setupNextRace(state);
+    return { ok: true };
+  }
+
+  // pool: optional subset of the queue to pick the heat from (keeps the on-deck preview exact).
+  function setupNextRace(state, pool) {
+    const active = activeCars(state);
+    state.raceCount += 1;
+    if (active.length <= LANES) {
+      state.current = { number: state.raceCount, isFinal: true, entries: assignLanes(state, state.queue) };
+    } else {
+      state.current = { number: state.raceCount, isFinal: false, entries: selectHeat(state, pool || state.queue) };
+    }
+    // Cars in the current race leave the waiting queue until their result is in.
+    const racing = new Set(state.current.entries.map((e) => e.carId));
+    state.queue = state.queue.filter((id) => !racing.has(id));
+  }
+
+  // finishOrder: array of carIds, 1st place first.
+  function recordResult(state, finishOrder, rand = Math.random) {
+    const cur = state.current;
+    if (!cur) return { ok: false, error: 'No race in progress' };
+    const heatIds = cur.entries.map((e) => e.carId).sort();
+    if (finishOrder.length !== heatIds.length ||
+        finishOrder.slice().sort().join() !== heatIds.join()) {
+      return { ok: false, error: 'Pick a finishing place for every car' };
+    }
+    snapshot(state);
+
+    const laneOf = Object.fromEntries(cur.entries.map((e) => [e.carId, e.lane]));
+    const k = finishOrder.length;
+    const results = finishOrder.map((carId, i) => ({
+      carId, lane: laneOf[carId], place: i + 1, lossAdded: false, eliminated: false,
+    }));
+
+    for (const r of results) {
+      const car = carById(state, r.carId);
+      car.races += 1;
+      car.lanes[r.lane] += 1;
+      car.lastLane = r.lane;
+      if (r.place === 1) car.wins += 1;
+    }
+
+    if (cur.isFinal) {
+      state.log.push({ number: cur.number, isFinal: true, results });
+      state.standings = finishOrder.slice();
+      state.current = null;
+      state.phase = 'done';
+      return { ok: true };
+    }
+
+    const losers = state.lossRule === 'allButWinner' ? results.slice(1) : results.slice(k - 1);
+    for (const r of losers) {
+      const car = carById(state, r.carId);
+      car.losses += 1;
+      r.lossAdded = true;
+      if (car.losses >= 2) {
+        car.eliminated = true;
+        car.elimOrder = ++state.elimCount;
+        r.eliminated = true;
+      }
+    }
+
+    // If we'd drop below 3 cars (possible with 'allButWinner'), bring back the best
+    // finishers that were just knocked out so the final still has 3 cars.
+    for (const r of results) {
+      if (activeCars(state).length >= LANES) break;
+      const car = carById(state, r.carId);
+      if (r.eliminated) {
+        car.eliminated = false; car.elimOrder = null; r.eliminated = false; r.revived = true;
+        state.elimCount -= 1;
+      }
+    }
+
+    state.log.push({ number: cur.number, isFinal: false, results });
+
+    // Racers go to the back of the line (shuffled to mix up match-ups), eliminated drop out.
+    const survivors = shuffle(cur.entries.map((e) => e.carId), rand)
+      .filter((id) => !carById(state, id).eliminated);
+    const waitingBefore = state.queue.slice();
+    state.queue = state.queue.concat(survivors);
+    setupNextRace(state, waitingBefore.length >= LANES ? waitingBefore : null);
+    return { ok: true };
+  }
+
+  // The (up to) 3 cars waiting after the current race.
+  // Returns { known: [{carId, lane|null}], tbd: n } — tbd slots get filled by cars from the current race.
+  function onDeck(state) {
+    if (state.phase !== 'racing' || !state.current || state.current.isFinal) return { known: [], tbd: 0, maybeFinal: false };
+    const waiting = state.queue;
+    if (waiting.length >= LANES) {
+      return { known: selectHeat(state, waiting), tbd: 0, maybeFinal: false };
+    }
+    // Not enough cars waiting; remaining spots come from the current race.
+    const activeAfterMin = activeCars(state).length - (state.lossRule === 'allButWinner' ? 2 : 1);
+    return {
+      known: waiting.map((carId) => ({ carId, lane: null })),
+      tbd: LANES - waiting.length,
+      maybeFinal: activeAfterMin <= LANES,
+    };
+  }
+
+  function carStatus(state, car) {
+    if (state.phase === 'done') {
+      const p = state.standings.indexOf(car.id);
+      return p >= 0 ? ['1st Place', '2nd Place', '3rd Place'][p] : 'Out';
+    }
+    if (car.eliminated) return 'Out';
+    if (state.current && state.current.entries.some((e) => e.carId === car.id)) {
+      return state.current.isFinal ? 'Final' : 'Racing';
+    }
+    if (state.phase === 'racing' && onDeck(state).known.some((e) => e.carId === car.id)) return 'On deck';
+    return state.phase === 'racing' ? 'Waiting' : '';
+  }
+
+  const api = {
+    LANES, newState, addCar, setSeed, isSeeded, removeCar, start, recordResult, undo, onDeck,
+    carById, activeCars, carStatus, assignLanes, shuffle,
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Bracket = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+(() => {
+  const STORAGE_KEY = 'pinewood-bracket-v1';
+  const LANE_COLORS = ['var(--l1)', 'var(--l2)', 'var(--l3)'];
+  const PLACE = ['1st', '2nd', '3rd'];
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // Everything lives in this browser's localStorage, so the page survives refreshes and
+  // works opened straight from a file with no server.
+  const PENDING_KEY = STORAGE_KEY + '-pending'; // finish order tapped but not saved yet
+  const storageOk = (() => {
+    try { localStorage.setItem(STORAGE_KEY + '-test', '1'); localStorage.removeItem(STORAGE_KEY + '-test'); return true; }
+    catch (e) { return false; }
+  })();
+
+  let state = load();
+  let finishOrder = loadPending(); // carIds tapped so far for the current race
+
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (s && s.phase) return s;
+    } catch (e) {}
+    return Bracket.newState();
+  }
+  function save() {
+    for (;;) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); return; }
+      catch (e) {
+        if (!state.history.length) { showStorageWarning('Could not save: browser storage is full or blocked.'); return; }
+        state.history.splice(0, Math.ceil(state.history.length / 2)); // drop old undo steps to make room
+      }
+    }
+  }
+  function loadPending() {
+    try {
+      const p = JSON.parse(localStorage.getItem(PENDING_KEY));
+      const cur = state.current;
+      if (!p || !cur || p.race !== cur.number || !Array.isArray(p.order)) return [];
+      const ids = cur.entries.map((e) => e.carId);
+      return p.order.filter((id) => ids.includes(id));
+    } catch (e) { return []; }
+  }
+  function savePending() {
+    try {
+      if (finishOrder.length && state.current) {
+        localStorage.setItem(PENDING_KEY, JSON.stringify({ race: state.current.number, order: finishOrder }));
+      } else localStorage.removeItem(PENDING_KEY);
+    } catch (e) {}
+  }
+  function showStorageWarning(msg) {
+    $('storageWarn').textContent = msg;
+    $('storageWarn').classList.remove('hidden');
+  }
+  if (!storageOk) showStorageWarning("This browser isn't letting the page save (private/incognito mode?). Progress will be lost if you refresh or close the page.");
+  // Keep other open tabs of the app in sync.
+  window.addEventListener('storage', (e) => {
+    if (e.key !== STORAGE_KEY && e.key !== PENDING_KEY) return;
+    state = load();
+    finishOrder = loadPending();
+    render();
+  });
+  const name = (id) => esc(Bracket.carById(state, id).name);
+  const lossText = (n) => (n === 1 ? '1 loss' : `${n} losses`);
+
+  // ---------- Setup ----------
+  // Shared controls for losses (0 / 1 / 2) and races run (− n +).
+  const lossPicker = (val, attrs = '') => `<div class="seg" role="group" aria-label="Losses">${[0, 1, 2].map((v) =>
+    `<button type="button" class="${val === v ? 'on' : ''} ${v === 2 ? 'out' : ''}" data-loss="${v}" ${attrs}
+      title="${v === 2 ? '2 losses: out' : v + (v === 1 ? ' loss' : ' losses')}">${v}${v === 2 ? '<small>out</small>' : ''}</button>`).join('')}</div>`;
+  const raceStepper = (val, min, attrs = '') => `<div class="stepper" role="group" aria-label="Races run">
+    <button type="button" data-step="-1" ${attrs} ${val <= min ? 'disabled' : ''} aria-label="One fewer race">−</button>
+    <span class="val">${val}</span>
+    <button type="button" data-step="1" ${attrs} aria-label="One more race">+</button></div>`;
+  const minRaces = (losses, lanes) => Math.max(losses, lanes.filter(Boolean).length);
+
+  // Values for the car being added.
+  let newCar = { losses: 0, races: 0, lanes: [0, 0, 0] };
+  function renderNewCar() {
+    newCar.races = Math.max(newCar.races, minRaces(newCar.losses, newCar.lanes));
+    $('newLosses').innerHTML = lossPicker(newCar.losses);
+    $('newRaces').innerHTML = raceStepper(newCar.races, minRaces(newCar.losses, newCar.lanes));
+    $('newLanes').innerHTML = newCar.lanes.map((u, l) =>
+      `<button type="button" class="lane-toggle u${l} ${u ? 'on' : ''}" data-l="${l}" title="Lane ${l + 1}">${l + 1}</button>`).join('');
+  }
+  $('addForm').addEventListener('click', (e) => {
+    const b = e.target.closest('button[type=button]');
+    if (!b) return;
+    if (b.dataset.loss != null) newCar.losses = +b.dataset.loss;
+    else if (b.dataset.step != null) newCar.races = Math.max(0, newCar.races + +b.dataset.step);
+    else if (b.dataset.l != null) newCar.lanes[+b.dataset.l] = newCar.lanes[+b.dataset.l] ? 0 : 1;
+    renderNewCar();
+  });
+  $('addForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const r = Bracket.addCar(state, $('carInput').value, newCar);
+    $('addError').textContent = r.ok ? '' : r.error;
+    if (r.ok) {
+      $('carInput').value = '';
+      newCar = { losses: 0, races: 0, lanes: [0, 0, 0] };
+      renderNewCar();
+    }
+    $('carInput').focus();
+    save(); render();
+  });
+  renderNewCar();
+  $('seedList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-id]');
+    if (b && !b.dataset.remove) {
+      const car = Bracket.carById(state, Number(b.dataset.id));
+      if (b.dataset.loss != null) Bracket.setSeed(state, car.id, { losses: +b.dataset.loss });
+      else if (b.dataset.step != null) Bracket.setSeed(state, car.id, { races: car.races + +b.dataset.step });
+      else if (b.dataset.lane != null) {
+        const lanes = car.lanes.slice();
+        lanes[+b.dataset.lane] = lanes[+b.dataset.lane] ? 0 : 1;
+        Bracket.setSeed(state, car.id, { lanes });
+      }
+      save(); render();
+      return;
+    }
+    const btn = e.target.closest('button[data-remove]');
+    if (!btn) return;
+    Bracket.removeCar(state, Number(btn.dataset.remove));
+    save(); render();
+  });
+  document.querySelectorAll('input[name=lossRule]').forEach((r) =>
+    r.addEventListener('change', () => { state.lossRule = r.value; save(); }));
+  $('startBtn').addEventListener('click', () => {
+    const n = state.cars.length;
+    const out = state.cars.filter((c) => c.losses >= 2).length;
+    const msg = `Start the bracket with ${n} cars${out ? ` (${out} already out with 2 losses)` : ''}? ` +
+      "You won't be able to add cars or change their results after this.";
+    if (!confirm(msg)) return;
+    const r = Bracket.start(state);
+    if (!r.ok) { $('addError').textContent = r.error; return; }
+    finishOrder = [];
+    save(); render();
+  });
+
+  // ---------- Racing ----------
+  $('lanes').addEventListener('click', (e) => {
+    const card = e.target.closest('.lane[data-car]');
+    if (!card) return;
+    const id = Number(card.dataset.car);
+    const idx = finishOrder.indexOf(id);
+    if (idx >= 0) finishOrder.splice(idx, 1);
+    else finishOrder.push(id);
+    // Auto-fill the last car once all the others are placed.
+    const ids = state.current.entries.map((x) => x.carId);
+    if (idx < 0 && finishOrder.length === ids.length - 1) {
+      finishOrder.push(ids.find((x) => !finishOrder.includes(x)));
+    }
+    render();
+  });
+  $('clearBtn').addEventListener('click', () => { finishOrder = []; render(); });
+  $('saveBtn').addEventListener('click', () => {
+    const r = Bracket.recordResult(state, finishOrder);
+    if (!r.ok) { alert(r.error); return; }
+    finishOrder = [];
+    save(); render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  $('undoBtn').addEventListener('click', () => {
+    if (finishOrder.length) { finishOrder = []; render(); return; }
+    if (!state.history.length) return;
+    const last = state.log[state.log.length - 1];
+    const msg = state.phase === 'racing' && !last
+      ? 'Go back to entering cars?'
+      : `Undo the results of ${last.isFinal ? 'the final race' : 'Race ' + last.number}?`;
+    if (!confirm(msg)) return;
+    state = Bracket.undo(state);
+    save(); render();
+  });
+  $('resetBtn').addEventListener('click', () => {
+    if (!confirm('Start a brand-new derby? This clears all cars and results.')) return;
+    const keep = state.phase !== 'setup' && confirm('Keep the same car names?');
+    const names = state.cars.map((c) => c.name);
+    const rule = state.lossRule;
+    state = Bracket.newState();
+    state.lossRule = rule;
+    if (keep) names.forEach((n) => Bracket.addCar(state, n));
+    finishOrder = [];
+    save(); render();
+  });
+
+  // ---------- Render ----------
+  function render() {
+    savePending();
+    $('setupView').classList.toggle('hidden', state.phase !== 'setup');
+    $('raceView').classList.toggle('hidden', state.phase !== 'racing');
+    $('doneView').classList.toggle('hidden', state.phase !== 'done');
+    $('statsView').classList.toggle('hidden', state.phase === 'setup');
+    $('undoBtn').disabled = !state.history.length && !finishOrder.length;
+
+    if (state.phase === 'setup') renderSetup();
+    if (state.phase === 'racing') renderRace();
+    if (state.phase === 'done') renderDone();
+    if (state.phase !== 'setup') { renderStandings(); renderLog(); }
+  }
+
+  function renderSetup() {
+    $('seedList').innerHTML = !state.cars.length ? '' : `
+      <div class="car-rows">
+        <div class="car-row head"><span>#</span><span>Car</span><span>Losses</span><span>Races run</span><span>Lanes used</span><span></span></div>
+        ${state.cars.map((c, i) => `
+          <div class="car-row ${c.losses >= 2 ? 'out' : ''}">
+            <span class="idx muted">${i + 1}</span>
+            <span class="nm">${esc(c.name)}</span>
+            <div class="cell c-loss"><span class="m-label">Losses</span>${lossPicker(c.losses, `data-id="${c.id}"`)}</div>
+            <div class="cell c-races"><span class="m-label">Races run</span>${raceStepper(c.races, minRaces(c.losses, c.lanes), `data-id="${c.id}"`)}</div>
+            <div class="cell c-lanes"><span class="m-label">Lanes used</span><div class="lanes-pick">${c.lanes.map((u, l) => `<button type="button" class="lane-toggle u${l} ${u ? 'on' : ''}" data-lane="${l}" data-id="${c.id}" title="Lane ${l + 1}">${l + 1}</button>`).join('')}</div></div>
+            <span class="c-del"><button class="small" data-remove="${c.id}" title="Remove">✕</button></span>
+          </div>`).join('')}
+      </div>`;
+    const n = state.cars.length;
+    const alive = state.cars.filter((c) => c.losses < 2).length;
+    $('carCount').textContent = n
+      ? `${n} car${n === 1 ? '' : 's'} entered${n - alive ? ` · ${n - alive} already out` : ''}`
+      : 'No cars yet.';
+    $('startBtn').disabled = alive < 3;
+    $('startHint').textContent = n < 3 ? `Need at least 3 cars (${3 - n} more)`
+      : alive < 3 ? 'Need at least 3 cars with fewer than 2 losses' : '';
+    document.querySelectorAll('input[name=lossRule]').forEach((r) => (r.checked = r.value === state.lossRule));
+  }
+
+  function renderRace() {
+    const cur = state.current;
+    $('raceTitle').textContent = cur.isFinal ? '🏆 Championship Race' : `Race ${cur.number}`;
+    $('raceTitle').classList.toggle('final', cur.isFinal);
+    const remaining = Bracket.activeCars(state).length;
+    $('raceInfo').textContent = cur.isFinal
+      ? 'Finishing order decides 1st, 2nd & 3rd place'
+      : `${remaining} cars still in · ${state.cars.length - remaining} out`;
+
+    const byLane = {};
+    cur.entries.forEach((e) => (byLane[e.lane] = e.carId));
+    let html = '';
+    for (let lane = 0; lane < Bracket.LANES; lane++) {
+      const id = byLane[lane];
+      if (id == null) {
+        html += `<div class="lane empty" style="--lc:${LANE_COLORS[lane]}"><div class="lane-label">LANE<b>${lane + 1}</b></div><div class="car-name muted">— empty —</div><div></div></div>`;
+        continue;
+      }
+      const car = Bracket.carById(state, id);
+      const place = finishOrder.indexOf(id);
+      html += `<div class="lane" data-car="${id}" style="--lc:${LANE_COLORS[lane]}">
+        <div class="lane-label">LANE<b>${lane + 1}</b></div>
+        <div class="car-name">${esc(car.name)}</div>
+        <div class="chips">${cur.isFinal ? '' : `<span class="chip ${car.losses ? 'l1' : 'ok'}">${lossText(car.losses)}</span>`}<span class="chip">race #${car.races + 1}</span></div>
+        ${place >= 0 ? `<div class="badge place-${place + 1}">${PLACE[place]}</div>` : ''}
+      </div>`;
+    }
+    $('lanes').innerHTML = html;
+
+    const done = finishOrder.length === cur.entries.length;
+    $('saveBtn').disabled = !done;
+    $('saveBtn').textContent = cur.isFinal ? 'Save Final Results 🏆' : 'Save Results';
+    if (done && !cur.isFinal) {
+      const losers = state.lossRule === 'allButWinner' ? finishOrder.slice(1) : finishOrder.slice(-1);
+      $('saveHint').innerHTML = 'Loss to: ' + losers.map((id) => {
+        const c = Bracket.carById(state, id);
+        return `${esc(c.name)}${c.losses + 1 >= 2 ? ' <strong style="color:var(--bad)">(eliminated)</strong>' : ''}`;
+      }).join(', ');
+    } else {
+      $('saveHint').textContent = done ? '' : `${finishOrder.length}/${cur.entries.length} placed`;
+    }
+
+    // On deck
+    $('deckPanel').classList.toggle('hidden', cur.isFinal);
+    if (!cur.isFinal) {
+      const deck = Bracket.onDeck(state);
+      let dh = deck.known.map((e) => `
+        <div class="deck-card" style="${e.lane != null ? `--lc:${LANE_COLORS[e.lane]}` : ''}">
+          <div class="lane-label">${e.lane != null ? `LANE ${e.lane + 1}` : 'NEXT RACE'}</div>
+          <div class="car-name">${name(e.carId)}</div>
+        </div>`).join('');
+      for (let i = 0; i < deck.tbd; i++) {
+        dh += `<div class="deck-card tbd"><div class="lane-label">NEXT RACE</div><div class="car-name">${deck.maybeFinal ? 'Depends on this race (could be the final!)' : 'A car from this race'}</div></div>`;
+      }
+      $('ondeck').innerHTML = dh;
+    }
+  }
+
+  function renderDone() {
+    const [a, b, c] = state.standings;
+    $('podium').innerHTML = `
+      <div class="p2"><span class="medal">🥈</span><span>2nd</span><span class="nm">${name(b)}</span></div>
+      <div class="p1"><span class="medal">🥇</span><span>1st</span><span class="nm">${name(a)}</span></div>
+      <div class="p3"><span class="medal">🥉</span><span>3rd</span><span class="nm">${name(c)}</span></div>`;
+  }
+
+  function renderStandings() {
+    const rank = (car) => {
+      if (state.standings) { const p = state.standings.indexOf(car.id); if (p >= 0) return p; }
+      return car.eliminated ? 1000 - car.elimOrder : 10 + car.losses; // later elimination ranks higher
+    };
+    const cars = state.cars.slice().sort((x, y) => rank(x) - rank(y) || y.wins - x.wins || x.name.localeCompare(y.name));
+    $('standings').innerHTML = cars.map((c) => {
+      const status = Bracket.carStatus(state, c);
+      const lanes = c.lanes.map((u, l) => `<span class="${u ? 'used u' + l : ''}" title="Lane ${l + 1}: ${u} race(s)">${l + 1}${u > 1 ? `<sup>×${u}</sup>` : ''}</span>`).join('');
+      return `<tr class="${c.eliminated ? 'out' : ''}">
+        <td>${esc(c.name)}</td><td>${c.races}</td><td class="hide-sm">${c.wins}</td><td>${c.losses}</td>
+        <td class="lanes-used">${lanes}</td><td class="status ${status}">${status}</td></tr>`;
+    }).join('');
+  }
+
+  function renderLog() {
+    if (!state.log.length) { $('log').innerHTML = '<p class="muted">No races finished yet.</p>'; return; }
+    $('log').innerHTML = state.log.slice().reverse().map((r) => `
+      <div class="log-entry"><strong>${r.isFinal ? '🏆 Final' : 'Race ' + r.number}</strong><br>
+      ${r.results.map((x) => `${PLACE[x.place - 1]}: ${name(x.carId)} <span class="muted">(L${x.lane + 1})</span>${
+        x.eliminated ? ' <span class="chip out">out</span>' : x.revived ? ' <span class="chip ok">to final</span>' : x.lossAdded ? ' <span class="chip l1">loss</span>' : ''}`).join(' · ')}
+      </div>`).join('');
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
